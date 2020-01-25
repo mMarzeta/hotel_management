@@ -9,6 +9,7 @@ verify_ssl = true
 fastapi = {extras = ["all"],version = "*"}
 pyjwt = "*"
 passlib = {extras = ["bcrypt"],version = "*"}
+peewee = "*"
 
 [requires]
 python_version = "3.6"

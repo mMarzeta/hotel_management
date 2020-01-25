@@ -1,18 +1,65 @@
+import logging
+import uuid
 from datetime import datetime, timedelta
 
 import jwt
-from fastapi import Depends, FastAPI, HTTPException
+import peewee
+from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jwt import PyJWTError
 from passlib.context import CryptContext
-from starlette.status import HTTP_401_UNAUTHORIZED
+from pydantic import BaseModel
+from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_409_CONFLICT
 
 from config import SECRET_KEY, ALGORITHM
-from models import TokenData, User, UserInDB, fake_users_db, UserRegister
+from models import UserModel
+
+logger = logging.getLogger(__name__)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: str = None
+
+
+class User(BaseModel):
+    username: str
+    email: str
+    full_name: str
+    disabled: bool = False
+
+
+class UserRegisterIn(User):
+    plain_password: str
+    pesel: str
+    address: str
+    tel_number: str
+
+
+class UserRegisterOut(User):
+    full_name: str
+    email: str
+    id: str
+
+
+class UserInDB(User):
+    hashed_password: str
+    id: str
+
+
+class UserDetails(User):
+    id: str
+    pesel: str
+    address: str
+    tel_number: str
 
 
 def verify_password(plain_password, hashed_password):
@@ -23,14 +70,8 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-def get_user(db, username: str):
-    if username in db:
-        user_dict = db[username]
-        return UserInDB(**user_dict)
-
-
-def authenticate_user(fake_db, username: str, password: str):
-    user = get_user(fake_db, username)
+def authenticate_user(username: str, password: str):
+    user = UserModel.get_user(username)
     if not user:
         return False
     if not verify_password(password, user.hashed_password):
@@ -63,24 +104,37 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         token_data = TokenData(username=username)
     except PyJWTError:
         raise credentials_exception
-    user = get_user(fake_users_db, username=token_data.username)
+    user = UserModel.get_user(username=token_data.username)
     if user is None:
         raise credentials_exception
     return user
 
 
-async def get_current_active_user(current_user: User = Depends(get_current_user)):
+async def get_current_active_user(current_user: UserDetails = Depends(get_current_user)):
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
 
-def register_user_in_db(user: UserRegister):
-    fake_users_db[user.username] = {
-        "username": user.username,
-        "full_name": user.full_name,
-        "email": user.email,
-        "hashed_password": get_password_hash(user.plain_password),
-        "pesel": user.pesel,
-        "disabled": False
-    }
+async def register_user(user: UserRegisterIn):
+    try:
+        user_id = str(uuid.uuid4())
+        UserModel.create(
+            id=user_id,
+            username=user.username,
+            email=user.email,
+            full_name=user.full_name,
+            pesel=user.pesel,
+            address=user.address,
+            tel_number=user.tel_number,
+            hashed_password=get_password_hash(user.plain_password),
+            disabled=False,
+        )
+        logging.info(f"Created user {user.username}")
+        return user_id
+    except peewee.IntegrityError as e:
+        logging.error(e)
+        raise HTTPException(
+            status_code=HTTP_409_CONFLICT,
+            detail="User with given username already exists."
+        )

@@ -1,37 +1,38 @@
-from pydantic import BaseModel
+import peewee
+import datetime
+from playhouse.shortcuts import model_to_dict
+
+db = peewee.SqliteDatabase('users.db')
 
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
+class UserModel(peewee.Model):
+    id = peewee.UUIDField()
+    username = peewee.CharField(primary_key=True, max_length=255)
+    email = peewee.CharField(max_length=255)
+    tel_number = peewee.CharField(max_length=15)
+    full_name = peewee.CharField(max_length=255)
+    pesel = peewee.CharField(max_length=30)
+    address = peewee.CharField(max_length=255)
+    hashed_password = peewee.CharField(max_length=255)
+
+    disabled = peewee.BooleanField()
+    created_at = peewee.DateTimeField(default=datetime.datetime.now)
+
+    class Meta:
+        database = db
+        table_name = "user"
+
+    @classmethod
+    def get_user(cls, username):
+        return cls.select().where(cls.username == username).get()
+
+    @classmethod
+    def get_user_as_dict(cls, username):
+        user = cls.get_user(username)
+        return model_to_dict(user)
 
 
-class TokenData(BaseModel):
-    username: str = None
+db.connect()
 
-
-class User(BaseModel):
-    username: str
-    email: str
-    full_name: str
-    pesel: str
-    disabled: bool = False
-
-
-class UserRegister(User):
-    plain_password: str
-
-
-class UserInDB(User):
-    hashed_password: str
-
-
-fake_users_db = {
-    "johndoe": {
-        "username": "johndoe",
-        "full_name": "John Doe",
-        "email": "johndoe@example.com",
-        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
-        "disabled": False,
-    }
-}
+if __name__ == "__main__":
+    db.create_tables([UserModel])
