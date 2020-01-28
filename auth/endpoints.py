@@ -5,14 +5,14 @@ from fastapi.security import OAuth2PasswordRequestForm
 from starlette.status import HTTP_401_UNAUTHORIZED
 
 from config import ACCESS_TOKEN_EXPIRE_MINUTES
-from oauth2 import authenticate_user, create_access_token, get_current_active_user, Token, User, \
-    UserRegisterIn, UserDetails
+from oauth2 import authenticate_user, create_access_token, get_current_active_user
+from schemas import Token, User, UserRegisterIn, UserDetails
 from oauth2 import register_user as oauth_register_user
 
 app = FastAPI()
 
 
-@app.post("/token", response_model=Token)
+@app.post("/login", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(form_data.username, form_data.password)
     if not user:

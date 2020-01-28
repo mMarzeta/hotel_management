@@ -35,4 +35,6 @@ class UserModel(peewee.Model):
 db.connect()
 
 if __name__ == "__main__":
-    db.create_tables([UserModel])
+    # db.create_tables([UserModel])
+    a = UserModel.get_user("demo")
+    x = 1

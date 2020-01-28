@@ -8,58 +8,17 @@ from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jwt import PyJWTError
 from passlib.context import CryptContext
-from pydantic import BaseModel
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_409_CONFLICT
 
 from config import SECRET_KEY, ALGORITHM
 from models import UserModel
+from schemas import TokenData, UserRegisterIn, UserDetails
 
 logger = logging.getLogger(__name__)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
-
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-
-class TokenData(BaseModel):
-    username: str = None
-
-
-class User(BaseModel):
-    username: str
-    email: str
-    full_name: str
-    disabled: bool = False
-
-
-class UserRegisterIn(User):
-    plain_password: str
-    pesel: str
-    address: str
-    tel_number: str
-
-
-class UserRegisterOut(User):
-    full_name: str
-    email: str
-    id: str
-
-
-class UserInDB(User):
-    hashed_password: str
-    id: str
-
-
-class UserDetails(User):
-    id: str
-    pesel: str
-    address: str
-    tel_number: str
 
 
 def verify_password(plain_password, hashed_password):

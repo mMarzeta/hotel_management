@@ -4,12 +4,16 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
+pytest = "*"
+pytest-mock = "*"
+pytest-cov = "*"
 
 [packages]
 fastapi = {extras = ["all"],version = "*"}
 pyjwt = "*"
 passlib = {extras = ["bcrypt"],version = "*"}
 peewee = "*"
+mock = "*"
 
 [requires]
 python_version = "3.6"
