@@ -1,9 +1,9 @@
-from fastapi import FastAPI
 from starlette.testclient import TestClient
 
 from endpoints import app
 
 import pytest
+
 import mock
 from models import UserModel
 import datetime
@@ -31,10 +31,11 @@ def sample_user(fixed_uuid):
         address="Main St. 1, 12-123 London",
         hashed_password="hashed password",
         disabled=False,
-        created_at=datetime.datetime.strptime("01-01-2020 12:00", format="%d-%m-%y %h:%m")
+        created_at=datetime.datetime.strptime("01-01-2020 12:00", "%d-%m-%Y %H:%M")
     )
 
 
+@pytest.fixture(scope="function")
 def mock_get_user(mocker, sample_user):
     user_mock = mock.MagicMock()
     user_mock.get_user = mock.MagicMock(return_value=sample_user)
@@ -43,3 +44,19 @@ def mock_get_user(mocker, sample_user):
         target="oauth2.UserModel",
         new=user_mock
     )
+
+
+@pytest.fixture(scope="function")
+def mock_verify_password(mocker):
+    mocker.patch(
+        target="oauth2.verify_password",
+        new=mock.MagicMock(return_value=True)
+    )
+
+
+@pytest.fixture(scope="function")
+def login_payload():
+    return {
+        "username": "test_user",
+        "password": "hashed password"
+    }

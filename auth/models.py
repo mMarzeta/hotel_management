@@ -1,5 +1,6 @@
 import peewee
 import datetime
+import logging
 from playhouse.shortcuts import model_to_dict
 
 db = peewee.SqliteDatabase('users.db')
@@ -24,7 +25,11 @@ class UserModel(peewee.Model):
 
     @classmethod
     def get_user(cls, username):
-        return cls.select().where(cls.username == username).get()
+        try:
+            return cls.select().where(cls.username == username).get()
+        except peewee.OperationalError as e:
+            logging.error(e)
+            return None
 
     @classmethod
     def get_user_as_dict(cls, username):
