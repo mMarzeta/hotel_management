@@ -3,6 +3,7 @@ from starlette.testclient import TestClient
 from endpoints import app
 
 import pytest
+import asyncio
 
 import mock
 from models import UserModel
@@ -60,3 +61,26 @@ def login_payload():
         "username": "test_user",
         "password": "hashed password"
     }
+
+
+@pytest.fixture(scope="function")
+def register_payload():
+    return {
+        "username": "test_user",
+        "email": "test@email.com",
+        "full_name": "John Doe",
+        "plain_password": "plain password",
+        "pesel": "00000000000",
+        "address": "Main St. 1, 12-123 London",
+        "tel_number": "111111111"
+    }
+
+
+@pytest.fixture(scope="function")
+def mock_register_user(mocker, fixed_uuid):
+    future = asyncio.Future()
+    future.set_result(fixed_uuid)
+    return mocker.patch(
+        target="endpoints.oauth_register_user",
+        new=mock.MagicMock(return_value=future)
+    )

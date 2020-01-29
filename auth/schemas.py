@@ -17,7 +17,10 @@ class User(BaseModel):
     disabled: bool = False
 
 
-class UserRegisterIn(User):
+class UserRegisterIn(BaseModel):
+    username: str
+    email: str
+    full_name:str
     plain_password: str
     pesel: str
     address: str
